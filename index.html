@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger & Life — personal tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--paper:#12151A;--card:#1C2129;--ink:#E4E9F0;--mute:#8C97A7;--line:#2C333E;--teal:#2A70D0;--blue:#7DB2FF;--red:#F0645A;--amber:#E0A030;--slate:#5F7088;--r:10px}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,serif;margin:0;line-height:1.15}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;background:#0B0E12;color:#fff;border-bottom:1px solid var(--line)}
+header h1{font-size:1.3rem}nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:0;color:#9AA7B8;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+nav button.on{background:var(--teal);color:#fff}
+button{font:inherit;cursor:pointer;color:var(--ink)}input,select,textarea{background:var(--paper);color:var(--ink)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #6FC7B5;outline-offset:2px}
+main{max-width:1180px;margin:0 auto;padding:20px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:16px}
+.pri{background:var(--teal);color:#fff !important;border:0;padding:9px 16px;border-radius:8px}.ghost{background:var(--card);border:1px solid var(--line);padding:8px 14px;border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}.stat b{display:block;font:700 1.7rem 'Bricolage Grotesque'}.stat span{color:var(--mute);font-size:.9rem}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.col{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;border-top:5px solid var(--slate)}
+.col.urgent{border-top-color:var(--red)}.col.mid{border-top-color:var(--amber)}.col h2{font-size:1.1rem;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.row small{display:block;color:var(--mute)}.row.overdue small{color:var(--red);font-weight:600}
+.tag{font-size:.75rem;padding:1px 8px;border-radius:99px;background:#22324D;color:var(--blue);margin-left:6px}
+.tag.inv{background:#3A2F17;color:#E7B85A}
+.mini{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:3px 9px;font-size:.85rem}.mini.x{color:var(--red)}
+.empty{color:var(--mute);padding:8px 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:16px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal .h{font-weight:600;color:var(--mute);text-align:center;font-size:.85rem}
+.day{min-height:92px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px;cursor:pointer;overflow:hidden;text-align:left}
+.day.dim{opacity:.4}.day.today{border:2px solid var(--teal)}.day em{font-style:normal;font-weight:600;font-size:.85rem}
+.chip{display:block;font-size:.72rem;border-radius:4px;padding:0 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;background:var(--slate)}
+.chip.urgent{background:var(--red)}.chip.mid{background:var(--amber)}.chip.inv{background:var(--teal)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600;font-size:.9rem}
+.meter{height:10px;background:#2A313B;border-radius:9px;overflow:hidden}.meter i{display:block;height:100%;background:var(--teal)}
+input[type=range]{width:100%;accent-color:var(--teal)}
+dialog{border:0;background:var(--card);color:var(--ink);border-radius:14px;padding:22px;width:min(440px,94vw)}dialog::backdrop{background:#000A}
+dialog label{display:block;margin:10px 0;font-weight:600;font-size:.9rem}
+dialog input,dialog select,dialog textarea{width:100%;padding:8px;margin-top:4px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.acts button{padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper)}.acts .pri{background:var(--teal);color:#fff !important;border:0}
+#gate{max-width:520px;margin:12vh auto;padding:24px;text-align:center}
+@media(max-width:640px){.day{min-height:60px}.chip{display:none}.day.has::after{content:"•";color:var(--teal)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+.mc{aspect-ratio:1;min-height:0;border:1px solid var(--line);border-radius:6px;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.8rem;padding:0}.mc b{font-size:.7rem}.mc.dim{opacity:.35}.mc.b1{background:#1F3A63}.mc.b2{background:#2A70D0;color:#fff}.mc.od{background:var(--red);color:#fff}.mc.today{outline:2px solid #fff}
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--mute);font-size:.85rem;margin-top:8px}.lg{width:12px;height:12px;border-radius:3px;background:var(--paper);border:1px solid var(--line)}.lg.b1{background:#1F3A63}.lg.b2{background:#2A70D0}.lg.od{background:var(--red)}
+.brow{display:grid;grid-template-columns:minmax(90px,140px) 1fr auto;gap:8px;align-items:center;margin:8px 0}.vc{display:flex;gap:12px;height:170px}.vg{flex:1;display:flex;flex-direction:column}.vb{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;border-bottom:1px solid var(--line)}.vb i{width:40%;max-width:36px;min-height:2px;border-radius:4px 4px 0 0}.vg small{text-align:center;color:var(--mute)}
+@media print{header,.bar button,nav{display:none}body{background:#fff}}
+.clocks{display:grid;grid-template-columns:minmax(300px,1fr) 2fr;gap:14px;margin-bottom:20px}.hero{display:flex;gap:16px;align-items:center;padding:16px;border-radius:20px;border:1px solid #2B4A7A;background:linear-gradient(150deg,#14366A,#0A101C);box-shadow:0 10px 30px #0006}.hero svg{width:42%;min-width:110px;filter:drop-shadow(0 0 12px #2A70D080)}.hero small{color:#8FB4EA;letter-spacing:.12em}.hero .dt{display:block;font:700 2.3rem 'Bricolage Grotesque';font-variant-numeric:tabular-nums}
+.cities{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.city{border-radius:16px;padding:12px;border:1px solid #2B3D5E;display:flex;flex-direction:column;gap:5px}.city .dt{font:700 1.6rem 'Bricolage Grotesque';font-variant-numeric:tabular-nums}.city[data-sky=dawn]{background:linear-gradient(160deg,#2C2C56,#7A4A48)}.city[data-sky=day]{background:linear-gradient(160deg,#1B4E8C,#2A78BE)}.city[data-sky=dusk]{background:linear-gradient(160deg,#39294F,#A5503A)}.city[data-sky=night]{background:linear-gradient(160deg,#080B14,#151E38)}
+.nm{font-weight:600;color:#fff}.nm em{display:block;font-style:normal;color:#B9CBE6;font-size:.8rem;font-weight:400}.dd{color:#B9C7DB;font-size:.85rem}.dp{height:6px;border-radius:9px;background:#0007;overflow:hidden}.dp i{display:block;height:100%;background:linear-gradient(90deg,#F0B54A,#7DB2FF)}.pill{font-size:.72rem;padding:2px 9px;border-radius:99px;background:#0008;width:fit-content;color:#DCE7F7}
+.tk{stroke:#5F82B8;stroke-width:1}.tk.big{stroke:#DCE7F7;stroke-width:2}.hh,.mh{stroke:#fff;stroke-width:4;stroke-linecap:round}.mh{stroke-width:2.6}.sh{stroke:#F0645A;stroke-width:1.2}.pin{fill:#F0645A}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.kc{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--slate);border-radius:12px;padding:12px}.kc.neglected{border-left-color:var(--red)}.kc.watch{border-left-color:var(--amber)}.kc.ok{border-left-color:#3BA776}.kh{display:flex;justify-content:space-between}.ks{font:700 2rem 'Bricolage Grotesque'}.kc small{display:block;color:var(--mute);margin-top:8px}.dotd{width:10px;height:10px;border-radius:3px;background:var(--line)}.dotd.on{background:#3BA776}
+@media(max-width:820px){.clocks{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="gate"><h1>Ledger &amp; Life</h1><p class="empty">Invoices, tasks, goals and reflection in one place.</p><div id="gmsg"></div></div>
+<div id="app" hidden>
+<header><h1>Ledger &amp; Life</h1><nav id="nav"></nav><button class="ghost" onclick="app.out()">Sign out</button></header>
+<main id="main"></main>
+</div>
+<dialog id="dlg"></dialog>
+
+<script type="module">
+/* ============ 1. PASTE YOUR FIREBASE CONFIG HERE ============ */
+const firebaseConfig={apiKey:"AIzaSyBrwiXRSt21Yu8_hj3lpj6-Yr83thXwoM8",authDomain:"wallace-n-nduta.firebaseapp.com",projectId:"wallace-n-nduta",storageBucket:"wallace-n-nduta.firebasestorage.app",messagingSenderId:"958456699637",appId:"1:958456699637:web:8af1490ca44aacf67d83bc"};
+const CURRENCY="KES";      // e.g. "KES", "EUR", "GBP"
+const BILL_AHEAD_DAYS=14;  // invoices are generated this many days before they are due
+/* ============================================================ */
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,collection,doc,setDoc,addDoc,updateDoc,deleteDoc,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>new Intl.NumberFormat(undefined,{style:'currency',currency:CURRENCY,maximumFractionDigits:0}).format(+n||0);
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const TODAY=iso(new Date());
+const diff=s=>Math.round((parse(s)-parse(TODAY))/864e5);
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const addMonths=(s,n)=>{const d=parse(s),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return iso(d)};
+const STEP={Monthly:1,Quarterly:3,Annually:12};
+const when=s=>{const n=diff(s);return n<0?`${-n}d overdue`:n==0?'Due today':n==1?'Due tomorrow':`In ${n} days · ${s}`};
+
+let db,uid,view='Dashboard',calMonth=new Date(),unsubs=[];
+const S={clients:[],invoices:[],tasks:[],goals:[],wins:[],reviews:[],txns:[],budgets:[],recurring:[],plans:[],billing:[],daily:[]},ready={};
+const COLS=Object.keys(S);
+const ref=c=>collection(db,'users',uid,c),dref=(c,id)=>doc(db,'users',uid,c,id);
+const add=(c,d)=>addDoc(ref(c),d),upd=(c,id,d)=>updateDoc(dref(c,id),d),del=(c,id)=>deleteDoc(dref(c,id));
+
+/* ---------- auth ---------- */
+if(firebaseConfig.apiKey==="YOUR_API_KEY"){$('#gmsg').innerHTML='<p><b>Setup needed:</b> paste your Firebase config at the top of index.html (see README steps).</p>'}
+else{
+ const fb=initializeApp(firebaseConfig),auth=getAuth(fb);db=getFirestore(fb);
+ const fs='padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;width:100%';
+ $('#gmsg').innerHTML=`<div style="display:grid;gap:10px;margin-top:8px;text-align:left">
+  <input id="em" type="email" placeholder="Email" autocomplete="username" style="${fs}">
+  <input id="pw" type="password" placeholder="Password (at least 6 characters)" autocomplete="current-password" style="${fs}">
+  <button class="pri" id="si">Sign in</button>
+  <button class="ghost" id="su">Create account</button>
+  <button class="ghost" id="fp" style="border:0">Forgot password?</button>
+  <button class="ghost" id="gg">Continue with Google</button>
+  <p id="err" role="alert" style="color:var(--red);margin:0"></p></div>`;
+ const em=()=>$('#em').value.trim(),pw=()=>$('#pw').value;
+ const fail=e=>{$('#err').style.color='var(--red)';$('#err').textContent=({'auth/invalid-credential':'Wrong email or password.','auth/invalid-email':'Enter a valid email address.','auth/email-already-in-use':'That email already has an account. Use Sign in.','auth/weak-password':'Use a password of at least 6 characters.','auth/missing-password':'Enter your password.','auth/operation-not-allowed':'Email sign-in is not enabled in Firebase yet.'})[e.code]||e.message};
+ $('#si').onclick=()=>signInWithEmailAndPassword(auth,em(),pw()).catch(fail);
+ $('#su').onclick=()=>createUserWithEmailAndPassword(auth,em(),pw()).catch(fail);
+ $('#fp').onclick=()=>sendPasswordResetEmail(auth,em()).then(()=>{$('#err').style.color='var(--teal)';$('#err').textContent='Password reset email sent. Check your inbox.'}).catch(fail);
+ $('#gg').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(fail);
+ $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#si').click()};
+ window.app={out:()=>signOut(auth)};
+ onAuthStateChanged(auth,u=>{unsubs.forEach(f=>f());unsubs=[];
+  if(!u){$('#gate').hidden=false;$('#app').hidden=true;return}
+  uid=u.uid;$('#gate').hidden=true;$('#app').hidden=false;
+  COLS.forEach(c=>unsubs.push(onSnapshot(ref(c),snap=>{S[c]=snap.docs.map(d=>({id:d.id,...d.data()}));ready[c]=1;autoBill();render()})));
+ });
+}
+
+/* ---------- recurring invoice automation ---------- */
+let billing=false;
+async function autoBill(){
+ if(billing||!ready.clients||!ready.invoices)return;billing=true;
+ for(const c of S.clients){
+  if(c.active===false||!c.nextDue)continue;let d=c.nextDue,changed=false;
+  while(diff(d)<=BILL_AHEAD_DAYS){
+   const id=`${c.id}_${d}`;
+   if(!S.invoices.some(i=>i.id===id))await setDoc(dref('invoices',id),{clientId:c.id,clientName:c.name,amount:(+c.amount||0),due:d,status:'pending',frequency:c.frequency});
+   d=addMonths(d,STEP[c.frequency]||1);changed=true;
+  }
+  if(changed)await upd('clients',c.id,{nextDue:d});
+ }
+ billing=false;
+}
+
+/* ---------- urgency engine ---------- */
+function items(){
+ const t=S.tasks.filter(x=>!x.done).map(x=>({kind:'task',id:x.id,title:x.title,due:x.due,cat:x.client||x.category,p:x.priority,remind:+x.remind||1}));
+ const i=S.invoices.filter(x=>x.status!=='paid').map(x=>({kind:'invoice',id:x.id,title:`${x.clientName} invoice`,due:x.due,p:'Mid',remind:3,sent:x.status==='sent'}));
+ const bl=S.billing.filter(b=>b.lastInvoiced).map(b=>({kind:'bill',id:b.id,title:`${b.name} · for ${b.owner}`,due:billNext(b),p:'Mid',remind:2}));return[...t,...i,...bl].map(x=>{const n=diff(x.due);x.days=n;
+  x.lvl=n<0||x.p==='Urgent'||(x.kind!=='task'&&n<=3)||n<=1?'urgent':(x.p==='Mid'||n<=7||(x.kind!=='task'&&n<=10))?'mid':'low';return x}).sort((a,b)=>a.days-b.days);
+}
+const rowHtml=x=>`<div class="row ${x.days<0?'overdue':''}"><div><b>${esc(x.title)}</b><span class="tag ${x.kind!='task'?'inv':''}">${x.kind=='bill'?'invoice date':x.kind=='invoice'?(x.sent?'invoice · sent':'invoice'):esc(x.cat||'task')}</span><small>${when(x.due)}</small></div>
+ <div>${x.kind=='bill'?`<button class="mini" onclick="app.billed('${x.id}')">Invoiced</button>`:x.kind=='invoice'?`${x.sent?'':`<button class="mini" onclick="app.sent('${x.id}')">Sent</button> `}<button class="mini" onclick="app.paid('${x.id}')">Paid</button>`:`<button class="mini" onclick="app.done('${x.id}')">Done</button>`}</div></div>`;
+
+/* ---------- views ---------- */
+
+/* ---------- world clocks ---------- */
+const ZONES=[['Nairobi','Kenya','Africa/Nairobi'],['London','UK','Europe/London'],['Shanghai','China','Asia/Shanghai'],['New York','USA','America/New_York'],['Tokyo','Japan','Asia/Tokyo']];
+const zt=z=>{const p={};new Intl.DateTimeFormat('en-GB',{timeZone:z,hour:'numeric',minute:'numeric',second:'numeric',hour12:false,weekday:'short',day:'numeric',month:'short',timeZoneName:'longOffset'}).formatToParts(new Date()).forEach(x=>p[x.type]=x.value);return p};
+const offH=t=>{const m=/GMT([+-])(\d\d):?(\d\d)?/.exec(t||'');return m?(m[1]=='-'?-1:1)*(+m[2]+(+m[3]||0)/60):0};
+function Clocks(){return`<div class="clocks"><div class="hero" id="ck0" data-sky="day"><svg viewBox="0 0 120 120" aria-hidden="true"><defs><radialGradient id="fg"><stop offset="0" stop-color="#1E3357"/><stop offset="1" stop-color="#0A0F18"/></radialGradient></defs><circle cx="60" cy="60" r="57" fill="url(#fg)" stroke="#3C6CB8" stroke-width="2.5"/>${[...Array(60)].map((_,k)=>`<line x1="60" y1="8" x2="60" y2="${k%5?11:16}" transform="rotate(${k*6} 60 60)" class="tk${k%5?'':' big'}"/>`).join('')}<line class="hh" x1="60" y1="60" x2="60" y2="34"/><line class="mh" x1="60" y1="60" x2="60" y2="19"/><line class="sh" x1="60" y1="69" x2="60" y2="13"/><circle cx="60" cy="60" r="3.5" class="pin"/></svg><div><small>HOME · KENYA</small><b class="dt"></b><span class="dd"></span><div class="dp"><i></i></div><span class="pill"></span></div></div>
+<div class="cities">${ZONES.slice(1).map(([c,n],i)=>`<div class="city" id="ck${i+1}" data-sky="day"><span class="nm">${c}<em>${n}</em></span><b class="dt"></b><small class="dd"></small><div class="dp"><i></i></div><span class="pill"></span></div>`).join('')}</div></div>`}
+function tick(){const hm=zt(ZONES[0][2]);ZONES.forEach(([c,n,z],i)=>{const el=document.getElementById('ck'+i);if(!el)return;const p=zt(z),h=+p.hour%24,m=+p.minute,sc=+p.second,d=offH(p.timeZoneName)-offH(hm.timeZoneName),pad=v=>String(v).padStart(2,'0'),open=!['Sat','Sun'].includes(p.weekday)&&h>=9&&h<17;
+ el.dataset.sky=h>=5&&h<8?'dawn':h>=8&&h<17?'day':h>=17&&h<20?'dusk':'night';
+ if(i==0){const r=(q,a)=>el.querySelector(q).setAttribute('transform',`rotate(${a} 60 60)`);r('.hh',(h%12)*30+m/2);r('.mh',m*6+sc/10);r('.sh',sc*6)}
+ el.querySelector('.dt').textContent=i?`${pad(h)}:${pad(m)}`:`${pad(h)}:${pad(m)}:${pad(sc)}`;el.querySelector('.dd').textContent=`${p.weekday} ${p.day} ${p.month}`;
+ el.querySelector('.dp i').style.width=((h*3600+m*60+sc)/864)+'%';
+ el.querySelector('.pill').textContent=(open?'Open for business':'Closed')+(i?` · ${d==0?'same time':Math.abs(d)+'h '+(d<0?'behind':'ahead')}`:` · ${el.dataset.sky}`)})}
+setInterval(tick,1000);
+/* ---------- daily tasks & client performance ---------- */
+const TYPES=['Invoicing','Paying bills','Bookkeeping','Reconciliation','Tax & compliance','Reporting','Admin','Other'],OWN=()=>['Personal',...S.clients.map(c=>c.name)];
+const dk=d=>'d'+d.replace(/-/g,''),lastN=n=>[...Array(n)].map((_,i)=>addDays(TODAY,-i)),isOn=(d,x)=>!!(d.log&&d.log[dk(x)]);
+function kpi(o){
+ const T=S.tasks.filter(t=>(t.client||'Other')===o),done=T.filter(t=>t.done),D=S.daily.filter(d=>d.client===o),B=S.billing.filter(b=>b.owner===o&&b.lastInvoiced);
+ const tr=pct(done.length,T.length),ot=pct(done.filter(t=>t.doneOn<=t.due).length,done.length),od=T.filter(t=>!t.done&&diff(t.due)<0).length;
+ const dr=pct(D.reduce((t,d)=>t+lastN(7).filter(x=>isOn(d,x)).length,0),D.length*7),bn=B.map(billNext).sort(),bod=bn.filter(x=>diff(x)<0).length;
+ const acts=[...done.map(t=>t.doneOn||''),...D.flatMap(d=>Object.keys(d.log||{}).filter(k=>d.log[k]).map(k=>k.slice(1,5)+'-'+k.slice(5,7)+'-'+k.slice(7)))].filter(Boolean).sort(),last=acts[acts.length-1],gap=last?-diff(last):null;
+ const parts=[T.length?tr:null,D.length?dr:null].filter(x=>x!==null),score=parts.length?Math.round(parts.reduce((a,b)=>a+b)/parts.length):null;
+ const st=T.length+D.length+B.length===0?'empty':(od+bod>0||(T.length+D.length>0&&(gap===null||gap>=3)))?'neglected':score!==null&&score<60?'watch':'ok';
+ return{o,T,done,D,B,tr,ot,od,dr,bn,bod,gap,score,st};
+}
+const kcard=k=>`<div class="kc ${k.st}"><div class="kh"><b>${esc(k.o)}</b><span class="tag">${({neglected:'Neglected',watch:'Watch',ok:'On track',empty:'No tasks yet'})[k.st]}</span></div><div class="ks">${k.score===null?'–':k.score+'%'}</div><div class="meter"><i style="width:${k.score||0}%"></i></div><small>Tasks ${k.done.length}/${k.T.length} · Daily ${k.D.length?k.dr+'%':'–'} · Overdue ${k.od+k.bod}${k.bn[0]?' · Next customer invoice '+k.bn[0]:''}${k.gap!==null?' · Last activity '+(k.gap<=0?'today':k.gap+'d ago'):''}</small></div>`;
+function Perf(){const R={neglected:0,watch:1,ok:2,empty:3},K=OWN().map(kpi).sort((a,b)=>R[a.st]-R[b.st]);
+ return`<div class="panel"><h2>Who is being neglected?</h2>${S.clients.length?`<div class="kpis">${K.map(kcard).join('')}</div>`:'<div class="empty">Add your clients first. <button class="ghost" onclick="app.seed()">Add Twocan, LTV, Sarah</button></div>'}</div>`}
+function Daily(){
+ const D=S.daily,n=D.filter(d=>isOn(d,TODAY)).length,streak=d=>{let c=0,i=isOn(d,TODAY)?0:1;while(i<90&&isOn(d,addDays(TODAY,-i))){c++;i++}return c};
+ return`<div class="panel"><div class="bar" style="margin-bottom:8px"><h2>Daily tasks · ${n}/${D.length} done today</h2><button class="ghost" onclick="app.daily()">Add daily task</button></div>${D.length?`<div class="meter"><i style="width:${pct(n,D.length)}%;background:#3BA776"></i></div>`:''}
+ ${D.map(d=>{const on=isOn(d,TODAY);return`<div class="row"><label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" style="width:20px;height:20px" ${on?'checked':''} onchange="app.tickd('${d.id}',this.checked)"><span style="${on?'text-decoration:line-through;color:var(--mute)':''}">${esc(d.name)}</span><span class="tag">${esc(d.client)}</span></label><div style="display:flex;gap:3px;align-items:center">${lastN(7).reverse().map(x=>`<i class="dotd ${isOn(d,x)?'on':''}" title="${x}"></i>`).join('')}<small style="margin-left:6px">${streak(d)}d streak</small> <button class="mini x" aria-label="Delete" onclick="app.rm('daily','${d.id}')">×</button></div></div>`}).join('')||'<div class="empty">Add the tasks you do every day and tick them off here. Ticks reset each morning.</div>'}</div>`}
+function RepKpi(){
+ const K=OWN().map(kpi),rows=[['Tasks completed',k=>`${k.done.length}/${k.T.length}`],['Completion rate',k=>k.T.length?k.tr+'%':'–'],['Finished on time',k=>k.done.length?k.ot+'%':'–'],['Overdue tasks',k=>k.od],['Daily routine, last 7 days',k=>k.D.length?k.dr+'%':'–'],['Customers I invoice',k=>k.B.length],['Customer invoice dates overdue',k=>k.bod],['Next customer invoice date',k=>k.bn[0]||'–'],['Days since last activity',k=>k.gap===null?'none':k.gap]];
+ const ty=TYPES.map(t=>[t,k=>{const x=k.T.filter(z=>z.type===t);return x.length?`${x.filter(z=>z.done).length}/${x.length}`:'–'}]);
+ const tbl=(h,r)=>`<div style="overflow-x:auto"><table><tr><th>${h}</th>${K.map(k=>`<th>${esc(k.o)}</th>`).join('')}</tr>${r.map(([l,f])=>`<tr><td>${l}</td>${K.map(k=>`<td>${f(k)}</td>`).join('')}</tr>`).join('')}</table></div>`;
+ return`<div class="kpis" style="margin-bottom:16px">${K.map(kcard).join('')}</div><div class="panel"><h2>Accountant KPIs per client</h2>${tbl('Measure',rows)}</div><div class="panel"><h2>Accounting work by type (done / total)</h2>${tbl('Type of work',ty)}</div>`}
+/* ---------- helpers for dashboard, report, budget ---------- */
+const pct=(a,b)=>b?Math.round(a/b*100):0,ymOf=n=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-n);return iso(d).slice(0,7)},THIS=TODAY.slice(0,7);
+const bar=(l,v,max,c,r)=>`<div class="brow"><span>${esc(l)}</span><div class="meter"><i style="width:${Math.min(100,pct(v,max))}%;background:${c||'var(--teal)'}"></i></div><b>${r??v}</b></div>`;
+const cols=(g,cs)=>{const mx=Math.max(1,...g.flatMap(x=>x.v));return`<div class="vc">${g.map(x=>`<div class="vg"><div class="vb">${x.v.map((n,i)=>`<i title="${n}" style="height:${n/mx*100}%;background:${cs[i]}"></i>`).join('')}</div><small>${esc(x.l)}</small></div>`).join('')}</div>`};
+const cstats=()=>{const m={Personal:{d:0,n:0}};S.clients.forEach(c=>m[c.name]={d:0,n:0});S.tasks.forEach(t=>{const k=t.client||'Other';(m[k]??={d:0,n:0});m[k].n++;if(t.done)m[k].d++});return m};
+const clientBars=()=>Object.entries(cstats()).map(([k,v])=>bar(k,v.d,v.n,'var(--teal)',`${v.d}/${v.n}`)).join('')||'<div class="empty">Add clients, then give tasks a client.</div>';
+const nextInv=c=>{const d=S.invoices.filter(i=>i.clientId===c.id&&i.status!=='paid').map(i=>i.due);if(c.nextDue)d.push(c.nextDue);return d.sort()[0]};
+const lateDays=i=>{const a=i.sentOn||i.paidOn;return a?Math.round((parse(a)-parse(i.due))/864e5):null};
+function MiniCal(){
+ const n=new Date(),first=new Date(n.getFullYear(),n.getMonth(),1),start=new Date(n.getFullYear(),n.getMonth(),1-first.getDay()),all=items();let c='';
+ for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const k=iso(d),ev=all.filter(x=>x.due===k),od=ev.some(x=>x.days<0);
+  c+=`<button class="mc ${d.getMonth()!=n.getMonth()?'dim':''} ${od?'od':ev.length>1?'b2':ev.length?'b1':''} ${k==TODAY?'today':''}" onclick="app.go('Calendar')" aria-label="${k}: ${ev.length} items"><span>${d.getDate()}</span>${ev.length?`<b>${ev.length}</b>`:''}</button>`}
+ return`<div class="cal">${['S','M','T','W','T','F','S'].map(x=>`<div class="h">${x}</div>`).join('')}${c}</div><div class="legend"><i class="lg"></i>Free <i class="lg b1"></i>Booked <i class="lg b2"></i>Heavy <i class="lg od"></i>Overdue</div>`;
+}
+
+const VIEWS=['Dashboard','Calendar','Invoices','Billing','Tasks','Goals','Budget','Report','Reflect'];
+function render(){
+ if(!uid)return;
+ $('#nav').innerHTML=VIEWS.map(v=>`<button class="${v==view?'on':''}" onclick="app.go('${v}')">${v=='Billing'?'Invoice Dates':v}</button>`).join('');
+ $('#main').innerHTML=({Dashboard,Calendar,Invoices,Billing,Tasks,Goals,Budget,Report,Reflect})[view]();
+}
+function Dashboard(){
+ const all=items(),by=l=>all.filter(x=>x.lvl===l),list=a=>a.length?a.map(rowHtml).join(''):'<div class="empty">Nothing here. Nice.</div>';
+ const over=all.filter(x=>x.days<0).length,wk=addDays(TODAY,-7),doneWk=S.tasks.filter(t=>t.done&&t.doneOn>=wk).length;
+ const nx=[...S.clients.map(c=>({c:{name:c.name},d:nextInv(c)})),...S.billing.map(b=>({c:{name:b.name+' · '+b.owner},d:billNext(b)}))].filter(x=>x.d).sort((a,b)=>a.d.localeCompare(b.d));
+ const gp=S.goals.length?Math.round(S.goals.reduce((t,g)=>t+ +g.progress,0)/S.goals.length):0;
+ return`<div class="bar"><h2>${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</h2>
+  <div><button class="ghost" onclick="app.notify()">Enable reminders</button> <button class="pri" onclick="app.task()">Add task</button></div></div>
+ ${Alerts()}${Clocks()}${Daily()}<div class="stats"><div class="stat"><b>${nx[0]?nx[0].d:'None'}</b><span>Next invoice date${nx[0]?' · '+esc(nx[0].c.name):''}</span></div><div class="stat"><b>${over}</b><span>Overdue items</span></div>
+ <div class="stat"><b>${doneWk}</b><span>Tasks done, last 7 days</span></div><div class="stat"><b>${gp}%</b><span>Average goal progress</span></div></div>
+ <div class="cols"><div class="col urgent"><h2>Urgent</h2>${list(by('urgent'))}</div><div class="col mid"><h2>Mid-level</h2>${list(by('mid'))}</div><div class="col"><h2>Coming up</h2>${list(by('low').slice(0,10))}</div></div>
+ ${Perf()}<div class="cols" style="margin-top:16px"><div class="panel"><h2>This month at a glance</h2>${MiniCal()}</div>
+ <div class="panel"><h2>Next invoice dates</h2>${nx.map(x=>`<div class="row"><b>${esc(x.c.name)}</b><small style="text-align:right">${x.d}<br>${when(x.d)}</small></div>`).join('')||'<div class="empty">Add clients under Invoices.</div>'}</div></div>`;
+}
+function Calendar(){
+ const y=calMonth.getFullYear(),m=calMonth.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),all=items();
+ const doneT=S.tasks.filter(t=>t.done).map(t=>({title:t.title,due:t.due,lvl:'low',kind:'task'}));
+ let cells='';
+ for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const s=iso(d),ev=[...all,...doneT].filter(x=>x.due===s);
+  cells+=`<button class="day ${d.getMonth()!=m?'dim':''} ${s==TODAY?'today':''} ${ev.length?'has':''}" onclick="app.task('${s}')"><em>${d.getDate()}</em>${ev.map(x=>`<span class="chip ${x.kind!='task'?'inv':x.lvl}">${esc(x.title)}</span>`).join('')}</button>`}
+ return`<div class="bar"><div><button class="ghost" onclick="app.mo(-1)">Prev</button> <button class="ghost" onclick="app.mo(1)">Next</button></div><h2>${first.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h2><span class="empty">Click a day to add a task</span></div>
+ <div class="cal">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="h">${d}</div>`).join('')}${cells}</div>`;
+}
+function Invoices(){
+ const inv=S.invoices.slice().sort((a,b)=>b.due.localeCompare(a.due));
+ return`<div class="bar"><h2>Clients &amp; invoice dates</h2><button class="pri" onclick="app.client()">Add client</button></div>
+ <div class="panel"><table><tr><th>Client</th><th>Repeats</th><th>Next invoice date</th><th></th></tr>${S.clients.map(c=>`<tr><td>${esc(c.name)}<small style="display:block;color:var(--mute)">${esc(c.email||'')}</small></td><td>${c.frequency}</td><td>${nextInv(c)?`${nextInv(c)}<small style="display:block;color:var(--mute)">${when(nextInv(c))}</small>`:'<small>No retainer invoice date</small>'}</td><td><button class="mini" onclick="app.client('${c.id}')">Edit</button> <button class="mini x" onclick="app.rm('clients','${c.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">Add a client (Twocan, LTV, Sarah...) and invoice dates are created automatically.</td></tr>'}</table></div>
+ <h2 style="margin-bottom:8px">Invoice history</h2><div class="panel"><table><tr><th>Client</th><th>Due date</th><th>Status</th><th></th></tr>${inv.map(i=>`<tr><td>${esc(i.clientName)}</td><td>${i.due}</td><td>${i.status==='pending'&&diff(i.due)<0?'overdue':i.status}</td><td>${i.status!=='paid'?`<button class="mini" onclick="app.sent('${i.id}')">Sent</button> <button class="mini" onclick="app.paid('${i.id}')">Paid</button>`:''} <button class="mini x" onclick="app.rm('invoices','${i.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan=4 class="empty">No invoices yet.</td></tr>'}</table></div>`;
+}
+const billNext=b=>b.lastInvoiced?addMonths(b.lastInvoiced,STEP[b.cycle]||1):null;
+function Alerts(){const a=items().filter(x=>x.days<0||(x.kind!=='task'&&x.days<=2));return a.length?`<div class="panel" style="border-left:5px solid var(--red)"><h3>Needs attention now</h3>${a.map(x=>`<div class="row"><span>${esc(x.title)}</span><small style="color:var(--red)">${x.days<0?-x.days+'d overdue':x.days?'in '+x.days+'d':'today'}</small></div>`).join('')}</div>`:''}
+function Billing(){
+ const L=S.billing.map(b=>({...b,next:billNext(b)})).filter(b=>b.next).sort((x,y)=>x.next.localeCompare(y.next)),cnt=f=>L.filter(b=>f(diff(b.next))).length,owners=[...new Set(L.map(b=>b.owner))];
+ return`<div class="bar"><h2>Invoice dates for clients</h2><button class="pri" onclick="app.bill()">Add client</button></div>
+ <div class="stats"><div class="stat"><b style="color:var(--red)">${cnt(n=>n<0)}</b><span>Overdue to invoice</span></div><div class="stat"><b>${cnt(n=>n>=0&&n<=2)}</b><span>Due within 2 days</span></div><div class="stat"><b>${cnt(n=>n>=0&&n<=7)}</b><span>Due within 7 days</span></div><div class="stat"><b>${L.length}</b><span>Clients tracked</span></div></div>
+ ${owners.map(o=>`<div class="panel"><h2>${esc(o)}: clients I invoice</h2><table><tr><th>Client</th><th>Cycle</th><th>Last invoiced</th><th>Next invoice date</th><th></th></tr>${L.filter(b=>b.owner===o).map(b=>{const n=diff(b.next);return`<tr><td>${esc(b.name)}</td><td>${b.cycle}</td><td>${b.lastInvoiced}</td><td style="color:${n<0?'var(--red)':n<=2?'var(--amber)':'inherit'};font-weight:${n<=2?600:400}">${b.next}<small style="display:block">${when(b.next)}</small></td><td><button class="mini" onclick="app.billed('${b.id}')">Invoiced</button> <button class="mini" onclick="app.bill('${b.id}')">Edit</button> <button class="mini x" onclick="app.rm('billing','${b.id}')">Delete</button></td></tr>`}).join('')}</table></div>`).join('')||'<div class="panel empty">Add each client you invoice for Twocan (or LTV, Sarah), with the date you last invoiced them and their cycle. The next date is worked out for you.</div>'}
+ <p class="empty">Press Invoiced when you send an invoice. The next date then moves forward by one cycle.</p>`;
+}
+function Tasks(){
+ const open=items().filter(x=>x.kind==='task'),done=S.tasks.filter(t=>t.done);
+ return`<div class="bar"><h2>Tasks</h2><div>${['Twocan','LTV','Sarah'].some(n=>!S.clients.some(c=>c.name.toLowerCase()===n.toLowerCase()))?'<button class="ghost" onclick="app.seed()">Add Twocan, LTV, Sarah</button> ':''}<button class="ghost" onclick="app.addc()">Add client</button> <button class="pri" onclick="app.task()">Add task</button></div></div>
+ <div class="panel"><h3>Progress by client</h3>${clientBars()}</div><div class="panel"><h3>Open</h3>${open.map(rowHtml).join('')||'<div class="empty">No open tasks.</div>'}</div>
+ <div class="panel"><h3>Completed</h3>${done.map(t=>`<div class="row"><div>${esc(t.title)}<small>Finished ${t.doneOn||''}</small></div><button class="mini x" onclick="app.rm('tasks','${t.id}')">Delete</button></div>`).join('')||'<div class="empty">Nothing completed yet.</div>'}</div>`;
+}
+function Goals(){
+ return`<div class="bar"><h2>Goals &amp; accomplishments</h2><div><button class="ghost" onclick="app.win()">Log accomplishment</button> <button class="pri" onclick="app.goal()">Add goal</button></div></div>
+ <div class="cols">${['Work','Personal'].map(a=>`<div class="col"><h2>${a} goals</h2>${S.goals.filter(g=>g.area===a).map(g=>`<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><b>${esc(g.title)}</b><span>${g.progress}%</span></div>
+ <div class="meter"><i style="width:${g.progress}%"></i></div><input type="range" min="0" max="100" step="5" value="${g.progress}" aria-label="Progress for ${esc(g.title)}" onchange="app.prog('${g.id}',this.value)">
+ <small>${g.target?`Target ${g.target} · ${when(g.target)}`:'No target date'} <button class="mini x" onclick="app.rm('goals','${g.id}')">Delete</button></small></div>`).join('')||'<div class="empty">No goals yet.</div>'}</div>`).join('')}</div>
+ <div class="panel" style="margin-top:16px"><h2>Accomplishments</h2>${S.wins.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(w=>`<div class="row"><div><b>${esc(w.title)}</b><span class="tag">${esc(w.area)}</span></div><div><small>${w.date}</small><button class="mini x" onclick="app.rm('wins','${w.id}')">Delete</button></div></div>`).join('')||'<div class="empty">Record wins big and small.</div>'}</div>`;
+}
+const EXP=['Housing','Food','Transport','Airtime & Data','Utilities','Health','Debt repayment','Education','Entertainment','Shopping','Savings','Other'],INC=['Client payments','Salary','Side income','Other income'],NEEDS=['Housing','Food','Transport','Airtime & Data','Utilities','Health','Debt repayment','Education'];
+const mtx=m=>S.txns.filter(t=>(t.date||'').slice(0,7)===m),tot=(a,ty)=>a.filter(t=>t.type===ty&&t.category!=='Savings').reduce((s,t)=>s+ +t.amount,0);
+const mTot=(m,ty)=>tot(mtx(m),ty)+S.recurring.filter(r=>r.type===ty&&r.from<=m&&r.category!=='Savings').reduce((t,r)=>t+ +r.amount,0);
+function Budget(){
+ const a=mtx(THIS),inc=mTot(THIS,'income'),exp=mTot(THIS,'expense'),net=inc-exp,prev=mTot(ymOf(1),'expense'),sr=pct(net,inc);
+ const recE=S.recurring.filter(r=>r.type==='expense'&&r.from<=THIS&&r.category!=='Savings'),recSum=recE.reduce((t,r)=>t+ +r.amount,0),varSum=exp-recSum;
+ const cat={};recE.forEach(r=>cat[r.category]=(cat[r.category]||0)+ +r.amount);a.filter(t=>t.type==='expense'&&t.category!=='Savings').forEach(t=>cat[t.category]=(cat[t.category]||0)+ +t.amount);
+ const lim={};S.budgets.forEach(b=>lim[b.category]=+b.limit);const rows=Object.entries(cat).sort((x,y)=>y[1]-x[1]),g=c=>cat[c]||0,surplus=Math.max(net,0);
+ const pl=S.plans.map(p=>{const left=Math.max(p.target-p.saved,0),mo=Math.max(1,Math.ceil((parse(p.deadline)-parse(TODAY))/2592e6));return{...p,left,mo,need:Math.ceil(left/mo)}});
+ const needTot=pl.reduce((t,p)=>t+p.need,0),gap=inc?Math.max(exp-inc,pl.length?needTot-surplus:0):0,tips=[];
+ if(!inc&&!exp)tips.push('Add your salary and bills under Recurring, then log day-to-day spending as entries.');
+ if(inc)tips.push(sr>=20?`Savings rate is ${sr}%. Healthy. Move the surplus into a savings plan on payday.`:`Savings rate is ${sr}%. Aim for 20% by trimming variable spending.`);
+ if(rows[0]&&pct(rows[0][1],exp)>30)tips.push(`${rows[0][0]} is ${pct(rows[0][1],exp)}% of your spending, your biggest leak. Review it first.`);
+ rows.filter(r=>lim[r[0]]&&r[1]>lim[r[0]]).forEach(r=>tips.push(`${r[0]} is ${money(r[1]-lim[r[0]])} over its limit.`));
+ if(prev&&exp>prev*1.1)tips.push(`Spending is up ${pct(exp-prev,prev)}% on last month. Check which categories grew.`);
+ const cutL=['Entertainment','Shopping','Other'].filter(g),trimL=['Food','Airtime & Data','Transport'].filter(g),keepL=NEEDS.filter(c=>!['Food','Airtime & Data','Transport'].includes(c)&&g(c));
+ const save=cutL.reduce((t,c)=>t+g(c)*.5,0)+trimL.reduce((t,c)=>t+g(c)*.1,0),late=pl.filter(p=>p.left).sort((x,y)=>y.deadline.localeCompare(x.deadline));
+ const ch=[5,4,3,2,1,0].map(n=>{const m=ymOf(n);return{l:m.slice(5),v:[mTot(m,'income'),mTot(m,'expense')]}});
+ const li=(x,f)=>x.length?x.map(f).join(''):'<div class="empty">Nothing here.</div>';
+ return`<div class="bar"><h2>Budget</h2><div><button class="ghost" onclick="app.rec()">Add recurring</button> <button class="ghost" onclick="app.limit()">Category limit</button> <button class="ghost" onclick="app.plan()">New savings plan</button> <button class="pri" onclick="app.txn()">Add entry</button></div></div>
+ <div class="stats"><div class="stat"><b>${money(inc)}</b><span>Income this month</span></div><div class="stat"><b>${money(recSum)}</b><span>Recurring expenses</span></div><div class="stat"><b>${money(varSum)}</b><span>Variable spending</span></div><div class="stat"><b style="color:${net<0?'var(--red)':'inherit'}">${money(net)}</b><span>Left over</span></div><div class="stat"><b>${sr}%</b><span>Savings rate</span></div></div>
+ <div class="cols"><div class="panel"><h2>Savings plans</h2>${li(pl,p=>`<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><b>${esc(p.name)}</b><span>${pct(p.saved,p.target)}%</span></div>${bar('',p.saved,p.target,'#3BA776',money(p.saved)+' / '+money(p.target))}<small>${p.left?`Save ${money(p.need)} a month for ${p.mo} month${p.mo>1?'s':''} to reach it by ${p.deadline}. ${p.need<=surplus?'Your current surplus covers this.':surplus?`At ${money(surplus)} a month alone, it takes ${Math.ceil(p.left/surplus)} months.`:'You have no surplus this month.'}`:'Goal reached.'}</small> <button class="mini" onclick="app.contrib('${p.id}')">Add savings</button> <button class="mini x" onclick="app.rm('plans','${p.id}')">Delete</button></div>`)}
+ ${pl.length?`<p><b>${needTot<=surplus?'You can afford all plans.':`Short by ${money(needTot-surplus)} a month.`}</b> Plans need ${money(needTot)} a month; your surplus is ${money(surplus)}.</p>`:''}</div>
+ <div class="panel"><h2>What your income can cover</h2><div class="row"><span>Monthly income</span><b>${money(inc)}</b></div><div class="row"><span>Recurring commitments</span><b>-${money(recSum)}</b></div><div class="row"><span>Variable spending so far</span><b>-${money(varSum)}</b></div><div class="row"><span><b>Free to save</b></span><b style="color:${net<0?'var(--red)':'#3BA776'}">${money(net)}</b></div>
+ ${tips.map(t=>`<div class="row">${esc(t)}</div>`).join('')}</div></div>
+ ${gap>0?`<div class="panel" style="border-left:5px solid var(--red)"><h2>${exp>inc?'Spending is above income':'Your plans need more room'}: gap of ${money(gap)} a month</h2>
+ <div class="cols"><div><h3>Cut first</h3>${li(cutL,c=>`<div class="row">${c}<small>cut half, save ${money(g(c)/2)}</small></div>`)}</div><div><h3>Trim a little</h3>${li(trimL,c=>`<div class="row">${c}<small>10% saves ${money(g(c)*.1)}</small></div>`)}</div>
+ <div><h3>Postpone</h3>${li(late,p=>`<div class="row">${esc(p.name)}<small>pause until income recovers</small></div>`)}</div><div><h3>Protect</h3>${li(keepL,c=>`<div class="row">${c}<small>${money(g(c))}</small></div>`)}</div></div>
+ <p>${save>=gap?`Cutting and trimming as shown frees about ${money(save)} a month, enough to close the gap.`:`Cutting and trimming frees about ${money(save)}, still ${money(gap-save)} short. Postpone the plans above or raise income.`}</p></div>`:''}
+ <div class="cols"><div class="panel"><h2>Where your money goes</h2>${rows.map(r=>bar(r[0],r[1],exp,lim[r[0]]&&r[1]>lim[r[0]]?'var(--red)':'var(--teal)',money(r[1])+(lim[r[0]]?' / '+money(lim[r[0]]):''))).join('')||'<div class="empty">No spending yet.</div>'}</div>
+ <div class="panel"><h2>Recurring every month</h2>${li(S.recurring,r=>`<div class="row"><div><b>${esc(r.name)}</b><span class="tag">${esc(r.category)}</span></div><div><b style="color:${r.type==='income'?'#3BA776':'var(--red)'}">${r.type==='income'?'+':'-'}${money(r.amount)}</b> <button class="mini x" onclick="app.rm('recurring','${r.id}')">Delete</button></div></div>`)}<small class="empty">Recurring items count every month automatically. Log only one-off and day-to-day spending as entries.</small></div></div>
+ <div class="panel"><h2>Income vs spending, last 6 months</h2>${cols(ch,['var(--teal)','var(--red)'])}<div class="legend"><i class="lg b2"></i>Income <i class="lg od"></i>Spending</div></div>
+ <div class="panel"><h2>Variable entries this month</h2>${li(a.sort((x,y)=>y.date.localeCompare(x.date)),t=>`<div class="row"><div><b>${esc(t.category)}</b> ${esc(t.note||'')}<small>${t.date}</small></div><div><b style="color:${t.type==='income'?'#3BA776':'var(--red)'}">${t.type==='income'?'+':'-'}${money(t.amount)}</b> <button class="mini x" onclick="app.rm('txns','${t.id}')">Delete</button></div></div>`)}</div>`;
+}
+function Report(){
+ const dueM=S.tasks.filter(t=>(t.due||'').slice(0,7)===THIS),doneM=S.tasks.filter(t=>t.done&&(t.doneOn||'').slice(0,7)===THIS);
+ const cRate=pct(dueM.filter(t=>t.done).length,dueM.length),ot=pct(doneM.filter(t=>t.doneOn<=t.due).length,doneM.length);
+ const im=S.invoices.filter(i=>i.due.slice(0,7)===THIS),acted=im.filter(i=>lateDays(i)!==null),iot=pct(acted.filter(i=>lateDays(i)<=0).length,im.length);
+ const late=acted.filter(i=>lateDays(i)>0),avgLate=late.length?Math.round(late.reduce((s,i)=>s+lateDays(i),0)/late.length):0;
+ const back=items().filter(x=>x.days<0).length,ahead=items().filter(x=>x.days>=0&&x.days<=30).length,inc=mTot(THIS,'income'),sr=inc?pct(inc-mTot(THIS,'expense'),inc):0;
+ const gp=S.goals.length?Math.round(S.goals.reduce((t,g)=>t+ +g.progress,0)/S.goals.length):0;
+ const score=Math.round((cRate+ot+(im.length?iot:100))/3),grade=score>=90?'A':score>=80?'B':score>=70?'C':score>=60?'D':'E';
+ const wk=[1,2,3,4,5].map(n=>({l:'Wk '+n,v:[doneM.filter(t=>Math.ceil(+t.doneOn.slice(8)/7)===n).length]}));
+ const K=(b,l)=>`<div class="stat"><b>${b}</b><span>${l}</span></div>`;
+ return`<div class="bar"><h2>${new Date().toLocaleDateString(undefined,{month:'long',year:'numeric'})} report</h2><button class="ghost" onclick="print()">Print or save PDF</button></div>
+ <div class="stats">${K(grade+' · '+score+'%','Month score')}${K(cRate+'%','Task completion rate')}${K(ot+'%','Tasks finished on time')}${K(im.length?iot+'%':'n/a','Invoices actioned by due date')}${K(avgLate+' days','Average lateness on late invoices')}${K(back,'Overdue backlog')}${K(ahead,'Deadlines in next 30 days')}${K(S.clients.length,'Active clients')}${K(sr+'%','Savings rate')}${K(gp+'%','Goal progress')}</div>
+ ${RepKpi()}<div class="cols"><div class="panel"><h2>Tasks completed per week</h2>${cols(wk,['var(--teal)'])}</div><div class="panel"><h2>Work done by client</h2>${clientBars()}</div></div>
+ <div class="panel"><h2>Accomplished this month (${doneM.length})</h2>${doneM.sort((x,y)=>y.doneOn.localeCompare(x.doneOn)).map(t=>`<div class="row"><div><b>${esc(t.title)}</b><span class="tag">${esc(t.client||t.category)}</span></div><small>${t.doneOn}</small></div>`).join('')||'<div class="empty">Finish a task and it appears here.</div>'}${S.wins.filter(w=>w.date.slice(0,7)===THIS).map(w=>`<div class="row"><div><b>${esc(w.title)}</b><span class="tag">win</span></div><small>${w.date}</small></div>`).join('')}</div>`;
+}
+const AREAS=['Work','Finances','Health','Relationships','Growth'];
+function Reflect(){
+ const rv=S.reviews.slice().sort((a,b)=>b.date.localeCompare(a.date));
+ return`<div class="bar"><h2>Self-assessment</h2><button class="pri" onclick="app.review()">New check-in</button></div>
+ ${rv.map(r=>`<div class="panel"><div class="bar" style="margin:0"><h3>${r.date}</h3><button class="mini x" onclick="app.rm('reviews','${r.id}')">Delete</button></div>
+ ${AREAS.map(a=>`<div style="display:grid;grid-template-columns:120px 1fr 30px;gap:8px;align-items:center"><span>${a}</span><div class="meter"><i style="width:${(r[a]||0)*20}%"></i></div><b>${r[a]||0}</b></div>`).join('')}
+ <p>${esc(r.notes)}</p></div>`).join('')||'<div class="empty">Rate each area of your life from 1 to 5 and note what to change next week.</div>'}`;
+}
+
+/* ---------- forms ---------- */
+function form(title,fields,save){
+ const d=$('#dlg');
+ d.innerHTML=`<form method="dialog"><h3>${title}</h3>${fields.map(f=>`<label>${f.l}${f.o?`<select name="${f.k}">${f.o.map(o=>`<option ${o==f.v?'selected':''}>${o}</option>`).join('')}</select>`:f.t=='area'?`<textarea name="${f.k}" rows="3"></textarea>`:`<input name="${f.k}" type="${f.t||'text'}" value="${esc(f.v??'')}" ${f.r?'required':''} ${f.t=='number'?'step="any"':''}>`}</label>`).join('')}<div class="acts"><button value="x" formnovalidate>Cancel</button><button value="ok" class="pri">Save</button></div></form>`;
+ d.onclose=()=>{if(d.returnValue=='ok')save(Object.fromEntries(new FormData(d.querySelector('form'))));d.returnValue=''};
+ d.showModal();
+}
+window.app=Object.assign(window.app||{},{
+ go:v=>{view=v;render()},mo:n=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+n,1);render()},
+ task:(d)=>form('New task',[{k:'title',l:'What needs doing?',r:1},{k:'client',l:'Whose task is this?',o:OWN()},{k:'type',l:'Type of work',o:TYPES},{k:'due',l:'Due date',t:'date',v:d||TODAY,r:1},{k:'priority',l:'Priority',o:['Urgent','Mid','Low'],v:'Mid'},{k:'remind',l:'Remind me this many days before',t:'number',v:1}],x=>add('tasks',{...x,category:x.client==='Personal'?'Personal':'Work',remind:+x.remind,done:false})),
+ client:(id)=>{const c=S.clients.find(z=>z.id===id)||{};form(id?'Edit client':'New client',[{k:'name',l:'Client name',v:c.name,r:1},{k:'email',l:'Email',t:'email',v:c.email},{k:'frequency',l:'Billing cycle',o:['Monthly','Quarterly','Annually'],v:c.frequency},{k:'nextDue',l:'First / next invoice date',t:'date',v:c.nextDue||TODAY,r:1}],x=>id?upd('clients',id,x):add('clients',{...x,amount:0,active:true}))},
+ goal:()=>form('New goal',[{k:'title',l:'Goal',r:1},{k:'area',l:'Area',o:['Work','Personal']},{k:'target',l:'Target date',t:'date'}],x=>add('goals',{...x,progress:0})),
+ win:()=>form('Log accomplishment',[{k:'title',l:'What did you achieve?',r:1},{k:'area',l:'Area',o:['Work','Personal']},{k:'date',l:'Date',t:'date',v:TODAY}],x=>add('wins',x)),
+ review:()=>form('Weekly check-in (1 = poor, 5 = great)',[{k:'date',l:'Date',t:'date',v:TODAY},...AREAS.map(a=>({k:a,l:a,t:'number',v:3})),{k:'notes',l:'What went well? What will you change?',t:'area'}],x=>{AREAS.forEach(a=>x[a]=Math.min(5,Math.max(1,+x[a]||3)));add('reviews',x)}),
+ done:id=>upd('tasks',id,{done:true,doneOn:TODAY}),sent:id=>upd('invoices',id,{status:'sent',sentOn:TODAY}),paid:id=>upd('invoices',id,{status:'paid',paidOn:TODAY}),
+ bill:(id)=>{const b=S.billing.find(z=>z.id===id)||{};form(id?'Edit client':'Add client I invoice',[{k:'name',l:'Client name',v:b.name,r:1},{k:'owner',l:'Whose client is this?',o:S.clients.length?S.clients.map(c=>c.name):['Twocan'],v:b.owner},{k:'cycle',l:'Invoice cycle',o:['Monthly','Quarterly','Annually'],v:b.cycle},{k:'lastInvoiced',l:'Last invoice date',t:'date',v:b.lastInvoiced||TODAY,r:1}],x=>id?upd('billing',id,x):add('billing',x))},
+ billed:id=>{const b=S.billing.find(z=>z.id===id);form('Invoiced: '+b.name,[{k:'date',l:'Invoice date (keep the due date to stay on schedule)',t:'date',v:billNext(b)||TODAY,r:1}],x=>upd('billing',id,{lastInvoiced:x.date}))},
+ daily:()=>form('New daily task',[{k:'name',l:'What do you do every day?',r:1},{k:'client',l:'Whose task is this?',o:OWN()},{k:'type',l:'Type of work',o:TYPES}],x=>add('daily',{...x,log:{}})),
+ tickd:(id,v)=>upd('daily',id,{['log.'+dk(TODAY)]:v}),
+ addc:()=>form('Add client',[{k:'name',l:'Client name',r:1}],x=>add('clients',{name:x.name.trim(),frequency:'Monthly',nextDue:'',amount:0,active:true})),
+ seed:()=>['Twocan','LTV','Sarah'].filter(n=>!S.clients.some(c=>c.name.toLowerCase()===n.toLowerCase())).forEach(n=>add('clients',{name:n,frequency:'Monthly',nextDue:'',amount:0,active:true})),
+ rec:()=>form('Recurring monthly item',[{k:'name',l:'Name (Rent, Salary, Netflix...)',r:1},{k:'type',l:'Type',o:['Expense','Income']},{k:'amount',l:'Monthly amount',t:'number',r:1},{k:'category',l:'Category',o:[...EXP,...INC]}],x=>add('recurring',{...x,type:x.type.toLowerCase(),amount:+x.amount,from:THIS})),
+ plan:()=>form('New savings plan',[{k:'name',l:'What are you saving for?',r:1},{k:'target',l:'Target amount',t:'number',r:1},{k:'saved',l:'Already saved',t:'number',v:0},{k:'deadline',l:'Want it by',t:'date',r:1}],x=>add('plans',{...x,target:+x.target,saved:+x.saved})),
+ contrib:id=>{const p=S.plans.find(z=>z.id===id);form('Add to '+p.name,[{k:'amount',l:'Amount saved now',t:'number',r:1}],x=>upd('plans',id,{saved:+p.saved + +x.amount}))},
+ txn:()=>form('Add income or expense',[{k:'type',l:'Type',o:['Expense','Income']},{k:'amount',l:'Amount',t:'number',r:1},{k:'category',l:'Category (income: '+INC.join(', ')+')',o:[...EXP,...INC]},{k:'date',l:'Date',t:'date',v:TODAY},{k:'note',l:'Note (optional)'}],x=>add('txns',{...x,amount:+x.amount,type:x.type.toLowerCase()})),
+ limit:()=>form('Monthly limit for a category',[{k:'category',l:'Category',o:EXP},{k:'limit',l:'Monthly limit',t:'number',r:1}],x=>setDoc(dref('budgets',x.category),{category:x.category,limit:+x.limit})),
+ prog:(id,v)=>upd('goals',id,{progress:+v}),rm:(c,id)=>confirm('Delete this permanently?')&&del(c,id),
+ notify:async()=>{if(!('Notification'in window))return alert('Notifications are not supported in this browser.');if(await Notification.requestPermission()=='granted')remind(true)}
+});
+/* Reminders fire when the app is open. For alerts while closed, add Cloud Functions + FCM (see README). */
+function remind(force){
+ if(!('Notification'in window)||Notification.permission!=='granted')return;
+ const due=items().filter(x=>x.days<=x.remind),k='reminded-'+TODAY+'-'+due.length;
+ if(!due.length||(localStorage.getItem(k)&&!force))return;
+ new Notification(`${due.length} item${due.length>1?'s':''} need attention`,{body:due.slice(0,6).map(x=>`${x.days<0?'OVERDUE':x.days==0?'Today':'In '+x.days+'d'}: ${x.title}`).join('\n')});localStorage.setItem(k,1)}
+setInterval(()=>ready.tasks&&remind(),15*60*1000);
+setTimeout(()=>{if(ready.tasks&&ready.invoices)remind()},2500);
+</script>
+</body>
+</html>
